@@ -7,7 +7,7 @@ from app.core.security import hash_password
 from app.models.user import User
 
 
-def _make_user(db_session, email="user@example.com", password="correct horse battery staple"):
+def _make_user(db_session, email="user@example.com", password="correct horse battery staple"):  # noqa: S107
     user = User(email=email, hashed_password=hash_password(password))
     db_session.add(user)
     db_session.commit()
@@ -50,3 +50,21 @@ def test_password_is_never_stored_in_plaintext(db_session):
 def test_repr_does_not_leak_password_hash(db_session):
     user = _make_user(db_session, email="repr@example.com")
     assert user.hashed_password not in repr(user)
+
+
+
+def test_role_defaults_to_requester(db_session):
+    from app.models.user import Role
+
+    user = _make_user(db_session, email="role@example.com")
+    assert user.role is Role.REQUESTER
+
+
+def test_invalid_role_is_rejected_by_database(db_session):
+    from sqlalchemy import text
+
+    user = _make_user(db_session, email="badrole@example.com")
+    with pytest.raises(IntegrityError):
+        db_session.execute(
+            text("UPDATE users SET role = 'root' WHERE id = :id"), {"id": user.id.hex}
+        )

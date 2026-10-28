@@ -10,6 +10,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY alembic.ini ./alembic.ini
+COPY migrations ./migrations
 COPY app ./app
 
 # Run as a dedicated, non-root, non-login user (defense in depth: limits
