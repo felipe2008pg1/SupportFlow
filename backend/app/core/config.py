@@ -43,6 +43,11 @@ class Settings(BaseSettings):
         description="PostgreSQL DSN, e.g. postgresql+psycopg://user:pass@host:5432/db",
     )
 
+        # Signs access tokens (HS256). Required, >= 32 chars, no placeholder values.
+    secret_key: str = Field(..., min_length=32)
+    access_token_expire_minutes: int = Field(default=15, ge=1, le=60)
+    refresh_token_expire_days: int = Field(default=7, ge=1, le=30)
+
     # These three are never read by the application itself — they exist
     # solely so docker-compose's `db` service can pick them up via the same
     # .env file (the official postgres image requires them as env vars).
@@ -60,6 +65,18 @@ class Settings(BaseSettings):
         if info.data.get("environment") == "production" and v:
             raise ValueError("DEBUG must be False when ENVIRONMENT=production")
         return v
+
+    @field_validator("secret_key")
+    @classmethod
+    def secret_key_not_placeholder(cls, v: str) -> str:
+        if v.upper().startswith("CHANGE_ME"):
+            raise ValueError("SECRET_KEY must be replaced with a generated random value")
+        return v
+
+    @property
+    def cookie_secure(self) -> bool:
+        # Secure cookies need HTTPS; keep plain-HTTP local dev working.
+        return self.environment != "development"
 
     @property
     def cors_origins(self) -> List[str]:

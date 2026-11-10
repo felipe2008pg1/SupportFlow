@@ -3,7 +3,7 @@ from alembic import context
 from sqlalchemy import create_engine, pool
 from app.core.config import get_settings
 from app.db.base import Base
-from app.models import user  # noqa: F401  (registers models on Base.metadata)
+from app.models import refresh_token, user  # noqa: F401  (registers models on Base.metadata)
 
 config = context.config
 if config.config_file_name is not None:
